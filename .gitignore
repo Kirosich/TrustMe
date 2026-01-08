@@ -1,0 +1,27 @@
+# Временные файлы и логи
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# Тестовые файлы
+test_*.php
+check_*.php
+fix_*.php
+add_*.php
+reinstall_*.php
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE файлы
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# НЕ игнорируем .description.php - это важные файлы модуля!
+
