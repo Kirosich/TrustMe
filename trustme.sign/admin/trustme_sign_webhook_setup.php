@@ -8,11 +8,13 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_ad
 
 use Bitrix\Main\Localization\Loc;
 
-Loc::loadMessages(__FILE__);
-
 $MODULE_ID = 'trustme.sign';
 CModule::IncludeModule($MODULE_ID);
 CModule::IncludeModule('crm');
+
+// Загружаем языковые файлы
+// Bitrix автоматически ищет файлы в /bitrix/admin/lang/{LANG}/trustme_sign_webhook_setup.php
+Loc::loadMessages(__FILE__);
 
 $APPLICATION->SetTitle(Loc::getMessage('TRUSTME_WEBHOOK_SETUP_TITLE'));
 
@@ -40,12 +42,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
             $message = Loc::getMessage('TRUSTME_WEBHOOK_ERROR_EMPTY_TOKEN');
             $messageType = 'error';
         } else {
+            // Сохраняем настройки
+            $options->setApiToken($apiTokenInput);
+            $options->setTestMode($testModeInput === 'Y');
+            
             $api = new \TrustMe\Sign\Api($apiTokenInput, $testModeInput === 'Y');
             $result = $api->setHook($webhookUrl);
             
             if ($result) {
                 $message = Loc::getMessage('TRUSTME_WEBHOOK_SUCCESS');
                 $messageType = 'success';
+                // Обновляем значения для отображения
+                $apiToken = $apiTokenInput;
+                $testMode = $testModeInput === 'Y';
             } else {
                 $error = $api->getLastError();
                 $message = Loc::getMessage('TRUSTME_WEBHOOK_ERROR') . ': ' . (isset($error['message']) ? $error['message'] : 'Unknown error');
@@ -62,6 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
             $message = Loc::getMessage('TRUSTME_WEBHOOK_ERROR_EMPTY_TOKEN');
             $messageType = 'error';
         } else {
+            // Сохраняем настройки
+            $options->setApiToken($apiTokenInput);
+            $options->setTestMode($testModeInput === 'Y');
+            
             $api = new \TrustMe\Sign\Api($apiTokenInput, $testModeInput === 'Y');
             $result = $api->getHookInfo();
             
@@ -69,12 +82,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
                 $message = Loc::getMessage('TRUSTME_WEBHOOK_INFO_SUCCESS');
                 $messageType = 'success';
                 $webhookInfo = $result;
+                // Обновляем значения для отображения
+                $apiToken = $apiTokenInput;
+                $testMode = $testModeInput === 'Y';
             } else {
                 $error = $api->getLastError();
                 $message = Loc::getMessage('TRUSTME_WEBHOOK_ERROR') . ': ' . (isset($error['message']) ? $error['message'] : 'Unknown error');
                 $messageType = 'error';
             }
         }
+    }
+    
+    if (isset($_POST['save_settings'])) {
+        $apiTokenInput = isset($_POST['api_token']) ? trim($_POST['api_token']) : '';
+        $testModeInput = isset($_POST['test_mode']) ? 'Y' : 'N';
+        
+        $options->setApiToken($apiTokenInput);
+        $options->setTestMode($testModeInput === 'Y');
+        
+        $message = 'Настройки успешно сохранены';
+        $messageType = 'success';
+        $apiToken = $apiTokenInput;
+        $testMode = $testModeInput === 'Y';
     }
 }
 
@@ -167,6 +196,7 @@ $webhookUrlLocal = $protocol . '://' . $host . '/local/webhook/trustme_webhook.p
     </div>
     
     <div class="adm-detail-toolbar">
+        <input type="submit" name="save_settings" value="Сохранить настройки" class="adm-btn">
         <input type="submit" name="set_webhook" value="<?= Loc::getMessage('TRUSTME_WEBHOOK_BUTTON_SET') ?>" class="adm-btn-save">
         <input type="submit" name="get_webhook_info" value="<?= Loc::getMessage('TRUSTME_WEBHOOK_BUTTON_GET_INFO') ?>" class="adm-btn">
     </div>

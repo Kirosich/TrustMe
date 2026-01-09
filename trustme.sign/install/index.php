@@ -120,6 +120,9 @@ class trustme_sign extends CModule
             true,
             true
         );
+        
+        // Копируем языковые файлы для admin файлов
+        $this->installAdminLangFiles();
 
         return true;
     }
@@ -135,6 +138,9 @@ class trustme_sign extends CModule
         // Удаляем admin файлы
         DeleteDirFilesEx('/bitrix/admin/trustme_sign_settings.php');
         DeleteDirFilesEx('/bitrix/admin/trustme_sign_webhook_setup.php');
+        
+        // Удаляем языковые файлы admin
+        $this->uninstallAdminLangFiles();
 
         return true;
     }
@@ -422,6 +428,73 @@ class trustme_sign extends CModule
         foreach ($webhookFiles as $file) {
             if (file_exists($file)) {
                 @unlink($file);
+            }
+        }
+    }
+
+    /**
+     * Копирование языковых файлов для admin файлов
+     */
+    protected function installAdminLangFiles()
+    {
+        $moduleDir = dirname(__DIR__);
+        $sourceLangDir = $moduleDir . '/lang';
+        $targetLangDir = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/admin/lang';
+        
+        if (!is_dir($targetLangDir)) {
+            @mkdir($targetLangDir, 0755, true);
+        }
+        
+        // Копируем языковые файлы для всех языков
+        if (is_dir($sourceLangDir)) {
+            $langDirs = glob($sourceLangDir . '/*', GLOB_ONLYDIR);
+            foreach ($langDirs as $langDir) {
+                $langId = basename($langDir);
+                $sourceAdminLangDir = $langDir . '/admin';
+                $targetAdminLangDir = $targetLangDir . '/' . $langId;
+                
+                if (is_dir($sourceAdminLangDir)) {
+                    if (!is_dir($targetAdminLangDir)) {
+                        @mkdir($targetAdminLangDir, 0755, true);
+                    }
+                    
+                    // Копируем trustme_sign_webhook_setup.php
+                    $sourceFile = $sourceAdminLangDir . '/trustme_sign_webhook_setup.php';
+                    $targetFile = $targetAdminLangDir . '/trustme_sign_webhook_setup.php';
+                    if (file_exists($sourceFile)) {
+                        @copy($sourceFile, $targetFile);
+                    }
+                    
+                    // Копируем trustme_sign_settings.php
+                    $sourceFile2 = $sourceAdminLangDir . '/trustme_sign_settings.php';
+                    $targetFile2 = $targetAdminLangDir . '/trustme_sign_settings.php';
+                    if (file_exists($sourceFile2)) {
+                        @copy($sourceFile2, $targetFile2);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Удаление языковых файлов для admin файлов
+     */
+    protected function uninstallAdminLangFiles()
+    {
+        $targetLangDir = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/admin/lang';
+        
+        if (is_dir($targetLangDir)) {
+            $langDirs = glob($targetLangDir . '/*', GLOB_ONLYDIR);
+            foreach ($langDirs as $langDir) {
+                $file1 = $langDir . '/trustme_sign_webhook_setup.php';
+                $file2 = $langDir . '/trustme_sign_settings.php';
+                
+                if (file_exists($file1)) {
+                    @unlink($file1);
+                }
+                if (file_exists($file2)) {
+                    @unlink($file2);
+                }
             }
         }
     }
